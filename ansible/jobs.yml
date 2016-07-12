@@ -1,0 +1,67 @@
+---
+# ansible/jobs.yml
+
+- name: Include jobs config
+  include_vars: jobs.yml
+
+- name: Create Jenkins jobs/ folder
+  file:
+    dest: "{{ jenkins.dest }}/jobs"
+    state: directory
+    owner: "{{ jenkins.user }}"
+    group: "{{ jenkins.group }}"
+    mode: 0700
+
+- name: Create Jenkins jobs_temp/ folder
+  file:
+    dest: "{{ jenkins.dest }}/jobs_temp"
+    state: directory
+    owner: "{{ jenkins.user }}"
+    group: "{{ jenkins.group }}"
+    mode: 0700
+
+- name: Create job definitions on host
+  template:
+    src: job.xml.j2
+    dest: "{{ jenkins.dest }}/jobs_temp/{{ item.value.name }}.xml"
+    owner: "{{ jenkins.user }}"
+    group: "{{ jenkins.group }}"
+    mode: 0640
+  with_dict: "{{ jenkins_jobs }}"
+  register: job_definitions
+
+- debug: var=job_definitions
+
+- name: Get current jobs
+  command: "{{ jenkins.cli_command }} list-jobs --username {{ jenkins_admin_user }} --password {{ jenkins_admin_pass }}"
+  register: current_jobs
+  changed_when: False
+
+- debug: var=current_jobs.stdout_lines
+
+- name: Create new jobs
+  shell: "{{ jenkins.cli_command }} create-job --username {{ jenkins_admin_user }} --password {{ jenkins_admin_pass }} '{{item.value.name}}' < '{{jenkins.dest}}/jobs_temp/{{ item.value.name }}.xml'"
+  when: "item.value.name not in current_jobs.stdout_lines"
+  with_dict: "{{ jenkins_jobs }}"
+
+#- name: Update existing jobs if they've changed
+#  shell: {{ jenkins.cli_command }} update-job --username {{ jenkins_admin_user }} --password {{ jenkins_admin_pass }} '{{item.value.name}}' < '{{jenkins.dest}}/jobs_temp/{{ item.value.name }}.xml'"
+#  when: "item.value.name in current_jobs.stdout_lines"
+#  #and job_definitions.results[item.1].changed
+#  with_dict: "{{ jenkins_jobs }}"
+
+#- name: Check if there are unexpected jobs on the servers
+#  debug: msg="Warning - Job {{ item }} is installed on the server but not in the configs directory. To delete use option jenkins.delete_orphaned_jobs"
+#  when: item not in jenkins_jobs
+#  with_items: "{{ current_jobs.stdout_lines }}"
+#  changed_when: True # If job exists mark task as changed to make it obvious in output
+
+#- name: Delete orphaned jobs
+#  command: "{{ jenkins.cli_command }} delete-job --username {{ jenkins_admin_user }} --password {{ jenkins_admin_pass }} {{ item.value.name }}"
+#  when: jenkins.delete_orphaned_jobs and item not in jenkins_group_config.jobs
+#  with_items: "{{ current_jobs.stdout_lines }}"
+
+- name: Remove jobs_temp/
+  file:
+    name: "{{ jenkins.dest }}/jobs_temp"
+    state: absent

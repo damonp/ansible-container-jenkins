@@ -1,0 +1,46 @@
+---
+# ansible/vars/jobs.yml
+
+jenkins_jobs:
+  #
+  # Update Jenkins Jobs
+  #
+  update_jenkins_jobs:
+    name: "Update-Jenkins-Jobs"
+    description: Update Jenkins jobs from vars/jobs.yml config
+    repository: "{{ repo_url }}"
+    credentials: 762405e0-4139-4b62-88a8-c203d27015f3
+    branch_spec: "*/master"
+    days_to_keep: 60
+    builds_to_keep: 20
+    nodes:
+    token:
+    command: |
+      ansible-playbook provision-jenkins.yml --extra-vars="hosts=localhost" -t "jobs" --vault-password-file /var/lib/jenkins/.vault
+
+    parameters:
+      jenkins_env:
+        name: JENKINS_ENV
+        type: hudson.model.ChoiceParameterDefinition
+        description: "Choose the environment for the deployment"
+        default: dev
+        choices: ['dev', 'qa', 'prod']
+
+    publishers:
+      mailer:
+        type: hudson.tasks.Mailer
+        plugin: mailer
+        # space separated list of emails to notify
+        recipients: "parker@pythian.com"
+        dontnotifyeveryunstablebuild: false
+        sendtoindividuals: false
+
+    wrappers:
+      ansicolor:
+        type: hudson.plugins.ansicolor.AnsiColorBuildWrapper
+        plugin: ansicolor
+        params:
+          { colorMapName: xterm }
+
+      mask_passwords:
+        type: com.michelin.cio.hudson.plugins.maskpasswords.MaskPasswordsBuildWrapper
