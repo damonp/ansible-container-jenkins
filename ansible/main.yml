@@ -1,0 +1,55 @@
+# ansible/jenkins.yml
+
+- hosts: jenkins
+  vars:
+    docker_machine_ip: 192.168.99.100
+    jenkins_api_token: ""
+    jenkins:
+      dest: /var/jenkins_home
+      cli_dest: /var/jenkins_home/jenkins-cli.jar
+      cli_command: "/usr/bin/java -jar /var/lib/jenkins/jenkins-cli.jar -s http://192.168.99.100:8080"
+      #cli_command: "/usr/bin/java -jar /var/lib/jenkins/jenkins-cli.jar -s http://{{ ansible_control_host_address }}:8080"
+      updates_dest: /var/jenkins_home/updates_jenkins.json
+      user: jenkins
+      group: jenkins
+      port:
+        web: 8080
+        jnlp: 50000
+    jenkins_plugins:
+      - git
+      - ssh
+      - mask-passwords
+      - jobConfigHistory
+      - greenballs
+      - ansicolor
+      - compact-columns
+      - rebuild
+    jenkins_users:
+      jenkins:
+        name: Jenkins API User
+        email: jenkins@domain.com
+        # See: https://pypi.python.org/pypi/bcrypt/2.0.0
+        # password: "#jbcrypt:$2a$10$L5S.IL0XC7iwpaUEl.201ug4kdka2x.U3SKC8mrPau9OXH7cWol56"
+        password: "jenkinspwd"
+
+  tasks:
+  - name: Debug
+    debug: var=hostvars[inventory_hostname]
+
+  - name: Include config.yml
+    include: config.yml
+    tags:
+      - install
+      - config
+
+#  - name: Include plugins.yml
+#    include: plugins.yml
+#    tags:
+#      - install
+#      - plugins
+
+#  - name: Include jobs.yml
+#    include: jobs.yml
+#    tags:
+#      - install
+#      - jobs

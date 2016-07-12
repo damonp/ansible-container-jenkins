@@ -1,0 +1,28 @@
+# ansible/config.yml
+
+- name: Create Jenkins users/ folder
+  file:
+    dest: "{{ jenkins.dest }}/users"
+    state: directory
+    owner: "{{ jenkins.user }}"
+    group: "{{ jenkins.group }}"
+    mode: 0750
+
+- name: Create Jenkins users/username/ folder
+  file:
+    dest: "{{ jenkins.dest }}/users/{{ item.key }}"
+    state: directory
+    owner: "{{ jenkins.user }}"
+    group: "{{ jenkins.group }}"
+    mode: 0750
+  with_dict: "{{ jenkins_users }}"
+
+- name: Create Jenkins users
+  template:
+    src: user.xml.j2
+    dest: "{{ jenkins.dest }}/users/{{ item.key }}/config.xml"
+    owner: "{{ jenkins.user }}"
+    group: "{{ jenkins.group }}"
+    mode: 0644
+  with_dict: "{{ jenkins_users }}"
+  notify: Reload Jenkins

@@ -1,0 +1,10 @@
+---
+# ansible/handlers/main.yml
+
+- name: Reload Jenkins
+  command: "{{ jenkins.cli_command }} safe-restart --username {{ jenkins_admin_user }} --password {{ jenkins_admin_pass }}"
+  when:
+  register: safeRestart_out
+
+- name: Restart Elasticsearch
+  service: name=elasticsearch state=restarted

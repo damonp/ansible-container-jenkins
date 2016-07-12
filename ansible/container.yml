@@ -1,0 +1,32 @@
+# ansible/container.yml
+
+version: "1"
+services:
+  jenkins:
+    image: jenkins
+    expose:
+      - "8080"
+    working_dir: '/var/jenkins_home'
+    user: 'jenkins'
+    command: ["/bin/tini", "--", "/usr/local/bin/jenkins.sh"]
+    volumes:
+      - '/var/jenkins_home'
+    ports:
+      - '8080:8080'
+      - '50000:50000'
+    dev_overrides:
+      working_dir: "$PWD/jenkins_home"
+      volumes:
+        #- "$PWD:/ansible"
+        - "$PWD/jenkins_home:/var/jenkins_home"
+      ports:
+        - '8080:8080'
+        - '50000:50000'
+    environment:
+      JAVA_OPTS: "-Djava.awt.headless=true -Xmx8192m"
+
+registries: {}
+  # Add optional registries used for deployment. For example:
+  #  google:
+  #    url: https://gcr.io
+  #    namespace: my-cool-project-xxxxxx
